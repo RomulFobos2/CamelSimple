@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="classpath:application.properties"/>
+
+    <bean id="connectionFactoryBean"
+          class="org.apache.activemq.ActiveMQConnectionFactory">
+        <!--        <constructor-arg value="vm://localhost?create=true"/>-->
+        <constructor-arg value="user"/>
+        <constructor-arg value="user"/>
+        <constructor-arg value="failover://tcp://localhost:61616"/>
+    </bean>
+
+    <bean id="producerBean"
+          class="org.org.example.Producer">
+        <constructor-arg ref="connectionFactoryBean"/>
+        <constructor-arg ref="bitronixTransactionManagerBean"/>
+        <constructor-arg value="1" type="int"/>
+        <constructor-arg value="SimpleQueue"/>
+        <constructor-arg value="2" type="int"/>
+        <constructor-arg ref="mailSenderBean"/>
+    </bean>
+
+    <bean id="managerDBBean"
+          class="org.org.example.ManagerDB">
+        <constructor-arg ref="dataSourceBean"/>
+        <constructor-arg value="${url}"/>
+        <constructor-arg value="${usernameDB}"/>
+        <constructor-arg value="${passwordDB}"/>
+    </bean>
+
+    <bean id="dataSourceBean"
+          class="bitronix.tm.resource.jdbc.PoolingDataSource">
+        <property name="uniqueName" value="${bitronix.uniqueName}"/>
+        <property name="className" value="${bitronix.className}"/>
+        <property name="maxPoolSize" value="${bitronix.maxPoolSize}"/>
+        <property name="allowLocalTransactions" value="${bitronix.allowLocalTransactions}"/>
+        <property name="driverProperties">
+            <props>
+                <prop key="user">root</prop>
+                <prop key="password"></prop>
+                <prop key="url">jdbc:mysql://localhost:3306/database_camel</prop>
+                <prop key="driverClassName">com.mysql.cj.jdbc.Driver</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="btmConfig" factory-method="getConfiguration" class="bitronix.tm.TransactionManagerServices">
+        <property name="serverId" value="spring-btm" />
+    </bean>
+
+    <bean id="bitronixTransactionManagerBean" factory-method="getTransactionManager"
+          class="bitronix.tm.TransactionManagerServices" depends-on="btmConfig"/>
+
+    <bean id="javaMailSenderImplBean"
+          class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="${mail.host}"/>
+        <property name="port" value="#{T(java.lang.Integer).parseInt('${mail.port}')}"/>
+        <property name="username" value="${mail.username}"/>
+        <property name="password" value="${mail.password}"/>
+        <property name="protocol" value="${mail.protocol}"/>
+    </bean>
+
+    <bean id="mailSenderBean"
+          class="org.org.example.MailSender">
+        <constructor-arg ref="javaMailSenderImplBean"/>
+    </bean>
+
+</beans>
